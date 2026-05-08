@@ -1,0 +1,43 @@
+#ifndef CELLBUTTON_H
+#define CELLBUTTON_H
+
+#include <QPushButton>
+#include <QMouseEvent>
+
+class CellButton : public QPushButton
+{
+    Q_OBJECT
+
+public:
+    explicit CellButton(int x, int y, QWidget *parent = nullptr);
+
+    int getX() const { return m_x; }
+    int getY() const { return m_y; }
+    void setRevealed(bool revealed) { m_isRevealed = revealed; }
+    bool isRevealed() const { return m_isRevealed; }
+    void setFlagged(bool flagged) { m_isFlagged = flagged; }
+    bool isFlagged() const { return m_isFlagged; }
+    void setMine(bool isMine) { m_isMine = isMine; }
+    bool isMine() const { return m_isMine; }
+    void setAdjacentMines(int count) { m_adjacentMines = count; }
+    int getAdjacentMines() const { return m_adjacentMines; }
+
+    void reset();  // 重置格子状态
+
+signals:
+    void leftClicked(int x, int y);
+    void rightClicked(int x, int y);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+
+private:
+    int m_x;
+    int m_y;
+    bool m_isMine;
+    bool m_isRevealed;
+    bool m_isFlagged;
+    int m_adjacentMines;
+};
+
+#endif

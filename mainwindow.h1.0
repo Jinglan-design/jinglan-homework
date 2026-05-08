@@ -1,0 +1,30 @@
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <QLabel>
+#include <QPushButton>
+#include "minefield.h"
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+
+private slots:
+    void onNewGame();
+    void onGameOver(bool win);
+    void onMineCountChanged(int count);
+
+private:
+    void setupUI();
+
+    MineField *m_mineField;
+    QLabel *m_mineCountLabel;
+    QPushButton *m_newGameBtn;
+};
+
+#endif

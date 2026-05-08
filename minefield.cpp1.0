@@ -1,0 +1,243 @@
+#include "minefield.h"
+#include <QDebug>
+#include <QRandomGenerator>
+MineField::MineField(QWidget *parent)
+    : QWidget(parent)
+    , m_layout(nullptr)
+    , m_rows(0)
+    , m_cols(0)
+    , m_mineCount(0)
+    , m_revealedCount(0)
+    , m_flagCount(0)
+    , m_gameOver(false)
+    , m_win(false)
+    , m_firstMove(true)
+{
+    m_layout = new QGridLayout(this);
+    m_layout->setSpacing(0);
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(m_layout);
+
+    newGame();
+}
+void MineField::newGame(int rows, int cols, int mineCount)
+{
+    if (!m_grid.empty()) {
+        for (auto& row : m_grid) {
+            for (auto* btn : row) {
+                if (btn) {
+                    m_layout->removeWidget(btn);
+                    delete btn;
+                }
+            }
+        }
+        m_grid.clear();
+    }
+
+    m_rows = rows;
+    m_cols = cols;
+    m_mineCount = mineCount;
+    m_revealedCount = 0;
+    m_flagCount = 0;
+    m_gameOver = false;
+    m_win = false;
+    m_firstMove = true;
+
+    initGrid();
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
+            m_isMine[i][j] = false;
+            m_adjacentMines[i][j] = 0;
+            m_revealed[i][j] = false;
+            m_flagged[i][j] = false;
+        }
+    }
+
+    calculateNumbers();
+
+    emit mineCountChanged(m_mineCount);
+}
+void MineField::initGrid()
+{
+    m_grid.resize(m_rows, std::vector<CellButton*>(m_cols, nullptr));
+    m_isMine.resize(m_rows, std::vector<bool>(m_cols, false));
+    m_adjacentMines.resize(m_rows, std::vector<int>(m_cols, 0));
+    m_revealed.resize(m_rows, std::vector<bool>(m_cols, false));
+    m_flagged.resize(m_rows, std::vector<bool>(m_cols, false));
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
+            CellButton *btn = new CellButton(i, j, this);
+            connect(btn, &CellButton::leftClicked, this, &MineField::onCellLeftClick);
+            connect(btn, &CellButton::rightClicked, this, &MineField::onCellRightClick);
+            btn->setFixedSize(32, 32);
+            m_layout->addWidget(btn, i, j);
+            m_grid[i][j] = btn;
+        }
+    }
+}
+void MineField::placeMines(int firstX, int firstY)
+{
+    QRandomGenerator *gen = QRandomGenerator::global();
+    int placed = 0;
+    while (placed < m_mineCount) {
+        int x = gen->bounded(m_rows);
+        int y = gen->bounded(m_cols);
+        bool isFirstCell = (x == firstX && y == firstY);
+        bool isAdjacent = (qAbs(x - firstX) <= 1 && qAbs(y - firstY) <= 1);
+
+        if (!m_isMine[x][y] && !isFirstCell && !isAdjacent) {
+            m_isMine[x][y] = true;
+            placed++;
+        }
+    }
+}
+void MineField::calculateNumbers()
+{
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
+            if (m_isMine[i][j]) {
+                m_adjacentMines[i][j] = -1;
+                continue;
+            }
+            int count = 0;
+            for (int di = -1; di <= 1; di++) {
+                for (int dj = -1; dj <= 1; dj++) {
+                    if (di == 0 && dj == 0) continue;
+                    int ni = i + di;
+                    int nj = j + dj;
+                    if (ni >= 0 && ni < m_rows && nj >= 0 && nj < m_cols) {
+                        if (m_isMine[ni][nj]) count++;
+                    }
+                }
+            }
+            m_adjacentMines[i][j] = count;
+        }
+    }
+}
+void MineField::resetAllButtons()
+{
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
+            if (m_grid[i][j]) {
+                m_grid[i][j]->reset();
+            }
+        }
+    }
+}
+void MineField::revealCell(int x, int y)
+{
+    if (x < 0 || x >= m_rows || y < 0 || y >= m_cols) return;
+    if (m_gameOver || m_win) return;
+    if (m_revealed[x][y]) return;
+    if (m_flagged[x][y]) return;
+    if (m_firstMove) {
+        for (int i = 0; i < m_rows; i++) {
+            for (int j = 0; j < m_cols; j++) {
+                m_isMine[i][j] = false;
+                m_adjacentMines[i][j] = 0;
+            }
+        }
+        placeMines(x, y);
+        calculateNumbers();
+        m_firstMove = false;
+    }
+
+    m_revealed[x][y] = true;
+    m_revealedCount++;
+
+    CellButton *btn = m_grid[x][y];
+
+    if (m_isMine[x][y]) {
+        btn->setText("💣");
+        btn->setStyleSheet("background-color: red;");
+        m_gameOver = true;
+        revealAllMines();
+        emit gameOver(false);
+        return;
+    }
+
+    int num = m_adjacentMines[x][y];
+    if (num > 0) {
+        btn->setText(QString::number(num));
+        QString color;
+        switch(num) {
+        case 1: color = "blue"; break;
+        case 2: color = "green"; break;
+        case 3: color = "red"; break;
+        default: color = "purple"; break;
+        }
+        btn->setStyleSheet(QString("color: %1; font-weight: bold; background-color: #cccccc;").arg(color));
+    } else {
+        btn->setText("");
+        btn->setStyleSheet("background-color: #cccccc;");
+        for (int di = -1; di <= 1; di++) {
+            for (int dj = -1; dj <= 1; dj++) {
+                if (di == 0 && dj == 0) continue;
+                int ni = x + di;
+                int nj = y + dj;
+                if (ni >= 0 && ni < m_rows && nj >= 0 && nj < m_cols) {
+                    if (!m_revealed[ni][nj] && !m_flagged[ni][nj]) {
+                        revealCell(ni, nj);
+                    }
+                }
+            }
+        }
+    }
+
+    btn->setEnabled(false);
+    checkWin();
+}
+void MineField::revealAllMines()
+{
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
+            if (m_isMine[i][j] && !m_revealed[i][j]) {
+                m_grid[i][j]->setText("💣");
+                m_grid[i][j]->setEnabled(false);
+            }
+        }
+    }
+}
+
+void MineField::checkWin()
+{
+    int totalNonMines = m_rows * m_cols - m_mineCount;
+    if (m_revealedCount == totalNonMines) {
+        m_gameOver = true;
+        m_win = true;
+        for (int i = 0; i < m_rows; i++) {
+            for (int j = 0; j < m_cols; j++) {
+                if (m_isMine[i][j]) {
+                    m_grid[i][j]->setText("🚩");
+                }
+            }
+        }
+
+        emit gameOver(true);
+    }
+}
+void MineField::onCellLeftClick(int x, int y)
+{
+    if (!m_gameOver && !m_win) {
+        revealCell(x, y);
+    }
+}
+void MineField::onCellRightClick(int x, int y)
+{
+    if (m_gameOver || m_win) return;
+    if (m_revealed[x][y]) return;
+
+    CellButton *btn = m_grid[x][y];
+
+    if (!m_flagged[x][y]) {
+        m_flagged[x][y] = true;
+        btn->setText("🚩");
+        m_flagCount++;
+        emit mineCountChanged(m_mineCount - m_flagCount);
+    } else {
+        m_flagged[x][y] = false;
+        btn->setText("");
+        m_flagCount--;
+        emit mineCountChanged(m_mineCount - m_flagCount);
+    }
+}

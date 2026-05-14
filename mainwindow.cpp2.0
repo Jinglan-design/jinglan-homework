@@ -2,9 +2,9 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
-#include <QInputDialog>
-#include <QComboBox>
-#include <QApplication>
+#include<QInputDialog>
+#include<QComboBox>
+#include<QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_mineCountLabel(nullptr)
     , m_newGameBtn(nullptr)
 {
+    MineField::initSoundEffects();
     setupUI();
 }
 
@@ -26,10 +27,17 @@ void MainWindow::setupUI()
 
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     mainLayout->setContentsMargins(10, 10, 10, 10);
+
     QHBoxLayout *topLayout = new QHBoxLayout();
     m_mineCountLabel = new QLabel("剩余雷数: 10", this);
     m_mineCountLabel->setStyleSheet("font-size: 16px; font-weight: bold; padding: 5px;");
     m_mineCountLabel->setFixedWidth(120);
+
+    m_soundCheckBox = new QCheckBox("🔊 音效", this);
+    m_soundCheckBox->setChecked(true); 
+    m_soundCheckBox->setFixedWidth(80);
+
+
     m_difficultyCombo = new QComboBox(this);
     m_difficultyCombo->addItem("🌱 初级 (9x9, 10雷)");
     m_difficultyCombo->addItem("⚡ 中级 (16x16, 40雷)");
@@ -37,10 +45,8 @@ void MainWindow::setupUI()
     m_difficultyCombo->addItem("🎲 自定义...");
     m_difficultyCombo->setMinimumWidth(160);
 
-
     m_customBtn = new QPushButton("自定义", this);
     m_customBtn->setFixedSize(70, 28);
-
 
     m_newGameBtn = new QPushButton("新游戏", this);
     m_newGameBtn->setFixedSize(70, 28);
@@ -69,9 +75,15 @@ void MainWindow::setupUI()
             this, &MainWindow::onDifficultyChanged);
     connect(m_mineField, &MineField::gameOver, this, &MainWindow::onGameOver);
     connect(m_mineField, &MineField::mineCountChanged, this, &MainWindow::onMineCountChanged);
+    connect(m_soundCheckBox, &QCheckBox::toggled, this, &MainWindow::onSoundToggled);
 
     setWindowTitle("扫雷游戏");
     setMinimumSize(550, 400);
+}
+
+void MainWindow::onSoundToggled(bool checked)
+{
+    MineField::setSoundEnabled(checked);
 }
 
 void MainWindow::onNewGame()
@@ -87,7 +99,7 @@ void MainWindow::startGame(int rows, int cols, int mineCount)
     if (m_mineField) {
         int buttonSize = 32;
         int margin = 40;
-        int topBarHeight = 100;
+        int topBarHeight = 100; 
 
         int width = cols * buttonSize + margin;
         int height = rows * buttonSize + topBarHeight;
@@ -105,6 +117,7 @@ void MainWindow::startGame(int rows, int cols, int mineCount)
         }
 
         m_mineField->newGame(rows, cols, mineCount);
+
         QApplication::processEvents();
     }
 }
@@ -136,7 +149,6 @@ void MainWindow::onCustomGame()
     int maxMines = (rows * cols) - 1;
     int defaultMines = qMin(rows * cols / 5, maxMines);
     int mineCount = QInputDialog::getInt(this, "自定义游戏", QString("雷数 (1-%1):").arg(maxMines), defaultMines, 1, maxMines, 1, &ok3);
-
     if (ok1 && ok2 && ok3) {
         m_difficultyCombo->setItemText(3, QString("🎲 自定义 (%1x%2, %3雷)").arg(rows).arg(cols).arg(mineCount));
         startGame(rows, cols, mineCount);
@@ -144,7 +156,6 @@ void MainWindow::onCustomGame()
         m_difficultyCombo->setCurrentIndex(0);
     }
 }
-
 void MainWindow::onGameOver(bool win)
 {
     if (win) {

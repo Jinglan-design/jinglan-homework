@@ -1,4 +1,5 @@
 #include "cellbutton.h"
+
 CellButton::CellButton(int x, int y, QWidget *parent)
     : QPushButton(parent)
     , m_x(x)
@@ -10,6 +11,7 @@ CellButton::CellButton(int x, int y, QWidget *parent)
 {
     setFixedSize(32, 32);
 }
+
 void CellButton::reset()
 {
     m_isMine = false;
@@ -20,16 +22,19 @@ void CellButton::reset()
     setEnabled(true);
     setStyleSheet("");
 }
+
 void CellButton::mousePressEvent(QMouseEvent *event)
 {
     if (m_isRevealed) {
         QPushButton::mousePressEvent(event);
         return;
     }
+    
     if (event->button() == Qt::LeftButton) {
         emit leftClicked(m_x, m_y);
     } else if (event->button() == Qt::RightButton) {
         emit rightClicked(m_x, m_y);
     }
+
     QPushButton::mousePressEvent(event);
 }

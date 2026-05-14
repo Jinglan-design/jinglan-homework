@@ -4,8 +4,9 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QPushButton>
-#include <QComboBox>
-#include <QDialog>
+#include<QComboBox>
+#include <QCheckBox>
+#include<QDialog>
 #include "minefield.h"
 
 class MainWindow : public QMainWindow
@@ -22,16 +23,18 @@ private slots:
     void onMineCountChanged(int count);
     void onDifficultyChanged(int index);
     void onCustomGame();
+    void onSoundToggled(bool checked);
 
 private:
     void setupUI();
-    void startGame(int rows, int cols, int mineCount);
+    void startGame(int rows,int cols,int mineCount);
 
     MineField *m_mineField;
     QLabel *m_mineCountLabel;
     QPushButton *m_newGameBtn;
     QComboBox *m_difficultyCombo;
     QPushButton *m_customBtn;
+    QCheckBox *m_soundCheckBox;
 };
 
 #endif

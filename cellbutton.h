@@ -23,6 +23,9 @@ public:
     int getAdjacentMines() const { return m_adjacentMines; }
 
     void reset();
+    static void setSoundEnabled(bool enabled);
+    static void initSoundEffect();
+    static void playClickSound();
 
 signals:
     void leftClicked(int x, int y);

@@ -12,6 +12,9 @@ CellButton::CellButton(int x, int y, QWidget *parent)
     setFixedSize(32, 32);
 }
 
+
+
+
 void CellButton::reset()
 {
     m_isMine = false;
@@ -29,7 +32,6 @@ void CellButton::mousePressEvent(QMouseEvent *event)
         QPushButton::mousePressEvent(event);
         return;
     }
-    
     if (event->button() == Qt::LeftButton) {
         emit leftClicked(m_x, m_y);
     } else if (event->button() == Qt::RightButton) {

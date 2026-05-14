@@ -22,7 +22,7 @@ public:
     void setAdjacentMines(int count) { m_adjacentMines = count; }
     int getAdjacentMines() const { return m_adjacentMines; }
 
-    void reset();  // 重置格子状态
+    void reset();
 
 signals:
     void leftClicked(int x, int y);

@@ -1,0 +1,42 @@
+#include "cellbutton.h"
+
+CellButton::CellButton(int x, int y, QWidget *parent)
+    : QPushButton(parent)
+    , m_x(x)
+    , m_y(y)
+    , m_isMine(false)
+    , m_isRevealed(false)
+    , m_isFlagged(false)
+    , m_adjacentMines(0)
+{
+    setFixedSize(32, 32);
+}
+
+
+
+
+void CellButton::reset()
+{
+    m_isMine = false;
+    m_isRevealed = false;
+    m_isFlagged = false;
+    m_adjacentMines = 0;
+    setText("");
+    setEnabled(true);
+    setStyleSheet("");
+}
+
+void CellButton::mousePressEvent(QMouseEvent *event)
+{
+    if (m_isRevealed) {
+        QPushButton::mousePressEvent(event);
+        return;
+    }
+    if (event->button() == Qt::LeftButton) {
+        emit leftClicked(m_x, m_y);
+    } else if (event->button() == Qt::RightButton) {
+        emit rightClicked(m_x, m_y);
+    }
+
+    QPushButton::mousePressEvent(event);
+}
